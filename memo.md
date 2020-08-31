@@ -45,3 +45,156 @@ $ touch babel.config.js
 ```
 
 - [webpack](https://webpack.js.org/) を使う場合は [Using with webpack · Jest](https://jestjs.io/docs/ja/webpack) を参照
+
+
+## [Using Matchers](https://jestjs.io/docs/ja/using-matchers)
+
+Matcher(マッチャー)、何とどのように比較検証するかについて。
+
+基本形は `expect(<テスト対象>).toXXXX(<期待値>)` という構文。
+
+API 一覧は [Expect · Jest](https://jestjs.io/docs/ja/expect) を参照。
+
+### [`toBe(value)`](https://jestjs.io/docs/ja/expect#tobevalue)
+
+値が等価であるかの確認には [`toBe(value)`](https://jestjs.io/docs/ja/expect#tobevalue) を使う。
+
+```js
+test('1 + 1 = 2', () => {
+  expect(1 + 1).toBe(2);
+});
+```
+
+ただし、浮動小数点数は丸め誤差があるため `toBe` ではなく [`toBeCloseTo(number, numDigits?)`](https://jestjs.io/docs/ja/expect#tobeclosetonumber-numdigits) を使う。
+
+### [`toBeCloseTo(number, numDigits?)`](https://jestjs.io/docs/ja/expect#tobeclosetonumber-numdigits)
+
+丸め誤差浮動小数点数は丸め誤差があるため [`toBeCloseTo(number, numDigits?)`](https://jestjs.io/docs/ja/expect#tobeclosetonumber-numdigits) で検証。
+
+```js
+test('0.1 + 0.2 = 0.3', () => {
+  expect(0.1 + 0.2).toBeCloseTo(0.3, 5);
+});
+```
+
+`numDigits` は小数点何位までを検証対象とするかというイメージ、デフォルト値は `2`。
+
+試しにこんな感じでテストをしたら `numDigits = 16` でエラーになる。ちなみに `0.01 + 0.02 = 0.30000000000000004 ≒ 0.3e-16` 。
+
+```js
+// https://r17n.page/2020/01/11/js-simple-loop-N/
+[...Array(20)].forEach((_, i) => {
+  test(`0.1 + 0.2 = 0.3 (numDigits: ${i})`, () => {
+    expect(sum(0.1, 0.2)).toBeCloseTo(0.3, i);
+  });
+})
+// =>   ✓ 0.1 + 0.2 = 0.3 (numDigits: 0)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 1)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 2)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 3)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 4)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 5)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 6)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 7)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 8)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 9)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 10)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 11)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 12)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 13)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 14)
+//      ✓ 0.1 + 0.2 = 0.3 (numDigits: 15)
+//      ✕ 0.1 + 0.2 = 0.3 (numDigits: 16)
+//      ...
+```
+
+より厳密に書くと `.toBeCloseTo(0.02, 4)` の場合は `0.01951 ~ 0.02049` であれば OK (期待値との誤差が `0.0005` 未満) という感じ。
+
+
+### [`toEqual(value)`](https://jestjs.io/docs/ja/expect#toequalvalue)
+
+Object を再帰的に検証。
+
+```js
+const hoge = { foo: 'bar' };
+const fuga = { foo: 'bar' };
+
+test(`hoge and fuga`, () => {
+  expect(hoge).toEqual(fuga);
+});
+```
+
+### [`not`](https://jestjs.io/docs/ja/expect#not)
+
+異なることの検証。
+
+```js
+test('1 + 1 != 1', () => {
+  expect(1 + 1).not.toBe(1);
+});
+```
+
+### [真偽値, Truthy, Falsy な値の検証](https://jestjs.io/docs/ja/using-matchers#%E7%9C%9F%E5%81%BD%E5%80%A4%E3%81%8A%E3%82%88%E3%81%B3%E3%81%9D%E3%82%8C%E3%82%89%E3%81%97%E3%81%8F%E6%80%9D%E3%81%88%E3%82%8B%E5%80%A4)
+
+メソッド | 概要 | 補足
+|:--|:--|:--
+[`toBeNull`](https://jestjs.io/docs/ja/expect#tobenull) | `null` のみ |
+[`toBeNaN`](https://jestjs.io/docs/ja/expect#tobenan) | `NaN` のみ
+[`toBeUndefined`](https://jestjs.io/docs/ja/expect#tobeundefined) | `undefined` のみ |
+[`toBeDefined`](https://jestjs.io/docs/ja/expect#tobedefined) | `undefined` でない |
+[`toBeTruthy`](https://jestjs.io/docs/ja/expect#tobetruthy) | `!= 0`, `true`, `!= null` など | [Truthy - MDN](https://developer.mozilla.org/ja/docs/Glossary/Truthy)
+[`toBeFalsy`](https://jestjs.io/docs/ja/expect#tobefalsy) | `0`, `false`, `null`, `undefined` など | [Falsy - MDN](https://developer.mozilla.org/ja/docs/Glossary/Falsy)
+
+### [数値](https://jestjs.io/docs/ja/using-matchers#%E6%95%B0%E5%80%A4)
+
+メソッド | 概要 | 補足
+|:--|:--|:--
+[`toBeGreaterThan(number \| bigint)`](https://jestjs.io/docs/ja/expect#tobegreaterthannumber--bigint) | 超過(`>`) |
+[`toBeGreaterThanOrEqual(number \| bigint)`](https://jestjs.io/docs/ja/expect#tobegreaterthanorequalnumber--bigint) | 以上(`>=`) |
+[`toBeLessThan(number \| bigint)`](https://jestjs.io/docs/ja/expect#tobelessthannumber--bigint) | 未満(`<`) |
+[`toBeLessThanOrEqual(number \| bigint)`](https://jestjs.io/docs/ja/expect#tobelessthanorequalnumber--bigint) | 以下(`<=`) |
+[`toBe(value)`](https://jestjs.io/docs/ja/expect#tobevalue) | 一致 | 数値の場合は `toEqual` と同じ
+[`toEqual(value)`](https://jestjs.io/docs/ja/expect#toequalvalue) | 一致 | 数値の場合は `toBe` と同じ
+[`toBeCloseTo(number, numDigits?)`](https://jestjs.io/docs/ja/expect#tobeclosetonumber-numdigits) | 近似値 | 浮動小数点数向け
+
+### [文字列](https://jestjs.io/docs/ja/using-matchers#%E6%96%87%E5%AD%97%E5%88%97)
+
+[`toMatch(regexpOrString)`](https://jestjs.io/docs/ja/expect#tomatchregexporstring) で正規表現を使った検証が可能。
+
+```js
+test('search "me"', () => {
+  expect('You meet!').toMatch(/me/);
+});
+
+test('search "you"', () => {
+  expect('I meet!').not.toMatch(/you/);
+});
+```
+
+### [配列など](https://jestjs.io/docs/ja/using-matchers#%E9%85%8D%E5%88%97%E3%81%A8%E5%8F%8D%E5%BE%A9%E5%8F%AF%E8%83%BD%E3%81%AA%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88)
+
+[`toContain(item)`](https://jestjs.io/docs/ja/expect#tocontainitem) で配列内の要素を検証可能。
+
+```js
+const arr = ['miki', 'ken', 'taro'];
+test('contains "ken"', () => {
+  expect(arr).toContain('ken');
+});
+```
+
+### [例外](https://jestjs.io/docs/ja/using-matchers#%E4%BE%8B%E5%A4%96)
+
+[`toThrow(error?)`](https://jestjs.io/docs/ja/expect#tothrowerror) で例外を投げるかを検証可能。
+
+```js
+const throwError = () => {
+  throw new Error('This is JavaScript');
+};
+
+test('exception', () => {
+  expect(throwError).toThrow();  // 例外を投げれば OK
+  expect(throwError).toThrow(Error);  // instanceof Error となる例外を投げれば OK
+  expect(throwError).toThrow('Java');  // メッセージに Java を含む例外を投げれば OK
+  expect(throwError).toThrow(/Java/);  // メッセージに Java を含む例外を投げれば OK (正規表現)
+});
+```
