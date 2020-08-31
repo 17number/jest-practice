@@ -34,3 +34,14 @@ The following questions will help Jest to create a suitable configuration for yo
   }
 }
 ```
+
+- [Babel](https://babeljs.io/) を使う場合は `npm i -D` でインストール
+  - Babel の設定は [`babel.config.js`](https://github.com/17number/jest-practice/blob/master/babel.config.js) で実施
+  - 設定詳細は [Configure Babel · Babel](https://babeljs.io/docs/en/configuration) を参照
+
+```bash
+$ npm i -D babel-jest @babel/core @babel/preset-env
+$ touch babel.config.js
+```
+
+- [webpack](https://webpack.js.org/) を使う場合は [Using with webpack · Jest](https://jestjs.io/docs/ja/webpack) を参照
