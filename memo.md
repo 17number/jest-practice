@@ -7,7 +7,8 @@
 - `hoge.js` をテストしたい場合は `hoge.test.js` か `hoge.spec.js` という名前でファイルを作成
   - 変更したい場合は Config の [`testMatch`](https://jestjs.io/docs/ja/configuration#testmatch-arraystring) を設定
 
-- `jest init`(グローバルインストールしてなければ `npx jest --init` でコンフィグファイル [`jest.config.js`](https://github.com/17number/jest-practice/blob/master/jest.config.js) を作成可能
+- `jest init`(グローバルインストールしてなければ `npx jest --init`) でコンフィグファイル [`jest.config.js`](https://github.com/17number/jest-practice/blob/master/jest.config.js) を作成可能
+  - あとは [Configuring Jest · Jest](https://jestjs.io/docs/ja/configuration) などを見ながら適宜カスタマイズ
 
 ```bash
 $ npx jest --init
@@ -20,4 +21,16 @@ The following questions will help Jest to create a suitable configuration for yo
 ✔ Automatically clear mock calls and instances between every test? … yes
 
 📝  Configuration file created at /Users/hoge/.../jest.config.js
+```
+
+- `package.json` 内にコンフィグを定義することも可能
+  - トップレベル("name" などと同じ階層)に `"jest"` で定義
+
+```json
+{
+  "name": "my-project",
+  "jest": {
+    "verbose": true
+  }
+}
 ```
