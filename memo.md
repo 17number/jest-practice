@@ -198,3 +198,180 @@ test('exception', () => {
   expect(throwError).toThrow(/Java/);  // メッセージに Java を含む例外を投げれば OK (正規表現)
 });
 ```
+
+## [Testing Asynchronous Code](https://jestjs.io/docs/ja/asynchronous)
+
+非同期処理のテストについて
+
+- コールバック: `done()` を使う
+- Promises:
+  - [`then`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Promise/then), [`catch`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) 内で検証
+  - [`resolves`](https://jestjs.io/docs/ja/expect#resolves) や [`rejects`](https://jestjs.io/docs/ja/expect#rejects) を使う
+  - [`async`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/async_function), [`await`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/await) を使う
+  - ↑の組合せでも可
+
+### [コールバック](https://jestjs.io/docs/ja/asynchronous#%E3%82%B3%E3%83%BC%E3%83%AB%E3%83%90%E3%83%83%E3%82%AF)
+
+コールバックを待つ場合は `done()` を使う
+
+```js
+const fetchData = callback => {
+  const data = 'peanut butter';  // なにかデータを取得する処理
+  callback(data);
+};
+
+test('the data is peanut butter', done => {
+  function callback(data) {
+    try {
+      expect(data).toBe('peanut butter');
+      done();  // done が無ければタイムアウトが発生して失敗する
+    } catch (error) {
+      done(error);  // expect が失敗した場合
+    }
+  }
+
+  fetchData(callback);
+});
+```
+
+### [Promises](https://jestjs.io/docs/ja/asynchronous#promises)
+
+[`Promise`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Promise) の場合は [`then`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Promise/then), [`catch`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) 内で検証できる。
+
+(最後の)検証対象には `return` をつける必要がある、つけない場合は `then`, `catch` 内のコールバックが実行されない可能性がある。
+
+[`expect.assertions(number)`](https://jestjs.io/docs/ja/expect#expectassertionsnumber) で検証対象の数を設定できる。
+
+```js
+const fetchData = (likePeanut = true) => {
+  return new Promise((resolve, reject) => {
+    const data = likePeanut ? 'peanut butter' : 'butter';  // なにかデータを取得する処理
+    if (data === 'peanut butter') {
+      resolve(data);
+    } else {
+      reject('not peanut butter');
+    }
+  });
+};
+
+test('the data is peanut butter', () => {
+  expect.assertions(1);  // 検証回数
+  return fetchData()
+    .then(data => expect(data).toBe('peanut butter'));
+});
+
+test('the data is not peanut butter', () => {
+  expect.assertions(1);  // 検証回数
+  return fetchData(false)
+    .catch(error => expect(error).not.toBe('peanut butter'));
+});
+```
+
+---
+
+> (最後の)検証対象には `return` をつける必要がある、つけない場合は `then`, `catch` 内のコールバックが実行されない可能性がある。  
+> [`expect.assertions(number)`](https://jestjs.io/docs/ja/expect#expectassertionsnumber) で検証対象の数を設定できる。
+
+前の例だとすぐにデータが返ってくるので、`expect.assertions(1);` で `return` 無しでもテストが成功する。
+
+以下のように1秒後にデータが返ってくるようなテストを作ると分かりやすい。([`setTimeout`](https://developer.mozilla.org/ja/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout) で wrap しただけ)
+
+```js
+const fetchDataWithTimer = (likePeanut = true) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const data = likePeanut ? 'peanut butter' : 'butter';  // なにかデータを取得する処理
+      if (data === 'peanut butter') {
+        resolve(data);
+      } else {
+        reject('not peanut butter');
+      }
+    }, 1000);
+  });
+};
+
+// こっちは成功
+test('the data is peanut butter (with return)', () => {
+  expect.assertions(1);  // 検証回数
+  return fetchDataWithTimer()
+    .then(data => expect(data).toBe('peanut butter'));
+});
+
+// こっちは失敗(データが返ってくる前にテストが終了し、expect.assertions(1) の条件を満たせない)
+test('the data is peanut butter (no return)', () => {
+  expect.assertions(1);  // 検証回数
+  fetchDataWithTimer()
+    .then(data => expect(data).toBe('peanut butter'));
+});
+```
+
+### [`.resolves` / `.rejects`](https://jestjs.io/docs/ja/asynchronous#resolves--rejects)
+
+[`resolves`](https://jestjs.io/docs/ja/expect#resolves) や [`rejects`](https://jestjs.io/docs/ja/expect#rejects) を使って、`expect(fetchData()).resolves.toBe`, `expect(fetchData()).rejects.not.toBe` という検証も可能。
+
+```js
+const fetchData = (likePeanut = true) => {
+  return new Promise((resolve, reject) => {
+    const data = likePeanut ? 'peanut butter' : 'butter';  // なにかデータを取得する処理
+    if (data === 'peanut butter') {
+      resolve(data);
+    } else {
+      reject('not peanut butter');
+    }
+  });
+};
+
+test('the data is peanut butter', () => {
+  expect.assertions(1);  // 検証回数
+  return expect(fetchData()).resolve.toBe('peanut butter');
+});
+
+test('the data is not peanut butter', () => {
+  expect.assertions(1);  // 検証回数
+  return expect(fetchData()).rejects.not.toBe('peanut butter');
+});
+```
+
+### [Async/Await](https://jestjs.io/docs/ja/asynchronous#asyncawait)
+
+[`async`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/async_function), [`await`](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/await) を使うことも可能。
+
+```js
+const fetchData = (likePeanut = true) => {
+  return new Promise((resolve, reject) => {
+    const data = likePeanut ? 'peanut butter' : 'butter';  // なにかデータを取得する処理
+    if (data === 'peanut butter') {
+      resolve(data);
+    } else {
+      reject('not peanut butter');
+    }
+  });
+};
+
+test('the data is peanut butter', async () => {
+  const data = await fetchData();
+  expect(data).toBe('peanut butter');
+});
+
+test('the data is not peanut butter', async () => {
+  try {
+    await fetchData(false);
+  } catch (error) {
+    return expect(error).not.toBe('peanut butter');
+  }
+});
+```
+
+---
+
+[`resolves`](https://jestjs.io/docs/ja/expect#resolves) や [`rejects`](https://jestjs.io/docs/ja/expect#rejects) との組合せも可能。
+
+```js
+test('the data is peanut butter', async () => {
+  await expect(fetchData()).resolves.toBe('peanut butter');
+});
+
+test('the fetch fails with an error', async () => {
+  await expect(fetchData()).rejects.toThrow('error');
+});
+```
